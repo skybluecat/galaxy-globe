@@ -388,9 +388,9 @@ graph3d.colorNode = function(id, color) {
     var node = graph3d.world.nodesMap[id];
     if (!node.color)
         node.color = {r:0,g:0,b:0};
-	if(n.color)
+	if(node.color)
 	{
-		graph3d.world.color.r-=n.color.r;graph3d.world.color.g-=n.color.g;graph3d.world.color.b-=n.color.b;
+		graph3d.world.color.r-=node.color.r;graph3d.world.color.g-=node.color.g;graph3d.world.color.b-=node.color.b;
 	}
     node.color.hue = color.h;
     node.color.saturation = color.s;
