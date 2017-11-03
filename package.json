@@ -1,0 +1,11 @@
+{
+  "name": "galaxy-globe-graph-sandbox",
+  "description":"graph visualization abstract sandbox game",
+  "version": "0.0.1",
+  "private": true,
+  "main":"app.js"
+  "dependencies": {
+	"express":"*",
+	"socket.io":"*"
+	},
+}

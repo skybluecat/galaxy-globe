@@ -176,7 +176,7 @@ function contextmenu( event ) {
 
 				axis.crossVectors( moveDirection, _eye ).normalize();
 
-				angle *= _this.rotateSpeed;
+				angle *= _this.rotateSpeed/Math.min(Math.max(_eye.length()/200,0.2),5);//added factor depending on distance from axis, otherwise seeing things farther from the axis becomes hard
 				quaternion.setFromAxisAngle( axis, angle );
 
 				_eye.applyQuaternion( quaternion );

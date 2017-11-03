@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Graph coloring sandbox</title>
+		<title>Galaxy Globe - Graph Sandbox</title>
 		<style type="text/css">
 html , body {
 	background: #eee; 
@@ -15,6 +15,35 @@ html , body {
 	margin: 0;
 	padding:0;
 	overflow:hidden;
+}
+
+div.world-template{
+	border:1px grey solid;
+	
+}
+p.world-name{
+	font-size: 18px;
+}
+
+#ability-menu {
+    position: absolute;
+    top: 10%;
+	left:0%;
+    width: 80px;
+    text-align: center;
+    color: slategrey;
+	background-color:black;
+    opacity: 0.7;
+    font-size: 14px;
+}
+div.context-menu {
+	
+    position: absolute;
+    text-align: left;
+    color: slategrey;
+	background-color:black;
+    opacity: 0.7;
+    font-size: 16px;
 }
 
 .graph-nav-info {
@@ -38,154 +67,215 @@ html , body {
 }
 
 .graph-tooltip {
+	background-color:black;
     position: absolute;
     color: lavender;
     font-size: 18px;
 }
+div.graph-logs {
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    text-align: center;
+    color: lavender;
+    opacity: 0.7;
+    font-size: 16px;
+}
+.exit-button {
+    position: absolute;
+    top: 0px;
+    left:0px;
+	width: 50px;
+	height: 50px;
+    text-align: center;
+    color: lavender;
+    opacity: 0.7;
+    font-size: 16px;
+}
 		</style>
 		<style type="text/css" src="style/dat.gui.css"></style>
+		
+		<script id="nodesVertexShader" type="x-shader/x-vertex">
+			attribute vec3 customColor;
+			attribute float size;
+			varying vec3 vColor;
+			void main() 
+			{
+				vColor = customColor; // set color associated to vertex; use later in fragment shader
+				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+				// option (1): draw particles at constant size on screen
+				// gl_PointSize = size;
+				// option (2): scale particles as objects in 3D space
+				gl_PointSize = 10.0 * ( 300.0 / length( mvPosition.xyz ) )*size;
+				gl_Position = projectionMatrix * mvPosition;
+			}
+		</script>
+
+		<script id="nodesFragmentShader" type="x-shader/x-fragment">
+			uniform sampler2D texture;
+			uniform float time;
+			varying vec3 vColor; // colors associated to vertices; assigned by vertex shader
+			void main() 
+			{
+				// calculates a color for the particle
+				gl_FragColor = vec4( vColor,1);
+				// sets particle texture to desired color
+				gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
+				}
+		</script>
+		<script id="linksVertexShader" type="x-shader/x-vertex">
+			attribute vec3 customColor;
+			attribute vec3 coord;
+			attribute float brightness;
+			varying vec3 vColor;
+			varying vec3 pixelCoord;
+			varying float bright;
+			void main() 
+			{
+				vColor = customColor; // set color associated to vertex; use later in fragment shader
+				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+				// option (1): draw particles at constant size on screen
+				// gl_PointSize = size;
+				// option (2): scale particles as objects in 3D space
+				//gl_PointSize = 1.0 * ( 300.0 / length( mvPosition.xyz ) );
+				gl_Position = projectionMatrix * mvPosition;
+				pixelCoord = coord;
+				bright = brightness;
+			}
+		</script>
+
+		<script id="linksFragmentShader" type="x-shader/x-fragment">
+			uniform sampler2D texture;
+			uniform float time;
+			varying vec3 vColor; // colors associated to vertices; assigned by vertex shader
+			varying vec3 pixelCoord;
+			varying float bright;
+			float pi=3.141592653;
+			void main() 
+			{
+				gl_FragColor = vec4(normalize(vColor)*bright/max(1.0,pixelCoord.z/200.0),1);//normalize(vColor)?
+				gl_FragColor = gl_FragColor
+				*min(1.0-pow(abs(pixelCoord.y),(pixelCoord.z/100.0)+0.5),max(pow(0.01,abs(pixelCoord.y))*0.3,pow(0.001,abs(pixelCoord.y))*1.23*(pixelCoord.z/170.0+0.5)))//soft edge width, meant to look sharp when close and thicker when far away
+				*sin( min((1.0-abs(pixelCoord.x))*20.0,pi/2.0));//soft end points, to avoid additive blending messing up the node shapes
+			}
+		</script>
+		<script id="playersVertexShader" type="x-shader/x-vertex">
+			attribute vec3 customColor;
+			attribute float size;
+			varying vec3 vColor;
+			void main() 
+			{
+				vColor = customColor; // set color associated to vertex; use later in fragment shader
+				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+				// option (1): draw particles at constant size on screen
+				// gl_PointSize = size;
+				// option (2): scale particles as objects in 3D space
+				gl_PointSize = 10.0 * ( 300.0 / length( mvPosition.xyz ) )*size;
+				gl_Position = projectionMatrix * mvPosition;
+			}
+		</script>
+
+		<script id="playersFragmentShader" type="x-shader/x-fragment">
+			uniform sampler2D texture;
+			uniform float time;
+			varying vec3 vColor; // colors associated to vertices; assigned by vertex shader
+			void main() 
+			{
+				// calculates a color for the particle
+				gl_FragColor = vec4( vColor*0.7,1);
+				float x=gl_PointCoord.x-0.5;
+				float y=gl_PointCoord.y-0.5;
+				
+				//calculate expanding circle effect
+				float s=((mod(time*5.0,0.25)-0.1)*1.2);//+8.0)/6.0;
+				gl_FragColor = gl_FragColor * pow(0.000001,abs(x*x+y*y-s))*(1.0-abs(x*x+y*y)*4.0);
+				//gl_FragColor = gl_FragColor * pow(0.5,abs(gl_PointCoord.x*gl_PointCoord.x+gl_PointCoord.y*gl_PointCoord.y-s))//texture2D( texture, gl_PointCoord );
+				}
+		</script>
+		
+		
 		<script type="text/javascript" src="socket.io/socket.io.js"></script>
 		<script type="text/javascript" src="js/d3.js"></script>
 		<script type="text/javascript" src="js/colors.js"></script>
+		<script type="text/javascript" src="js/ntc.js"></script>
 		<script type="text/javascript" src="js/dat.gui.js"></script>
-		<script type="text/javascript" src="js/three.js"></script>
+		<script type="text/javascript" src="js/three.min.js"></script>
 		<script type="text/javascript" src="js/EffectComposer.js"></script>
 		<script type="text/javascript" src="js/RenderPass.js"></script>
 		<script type="text/javascript" src="js/ShaderPass.js"></script>
 		<script type="text/javascript" src="js/CopyShader.js"></script>
+		<script type="text/javascript" src="js/FXAAShader.js"></script>
 		
-		
+		<script type="text/javascript" src="js/stats.js"></script>
 		<script type="text/javascript" src="js/controls.js"></script>
 		<script type="text/javascript" src="js/d3-force-3d.js"></script>
 		<script type="text/javascript" src="js/3d-force-graph.js"></script>
+		
 
 	</head>
 
 	<body>
 		<div id="canvas" height="100%" width="100%"></div>
 		
+		<div id="main-menu" style="display:none;position: absolute;top:10%;right:25%;height: 60%;width:50%;text-align: center;color: slategrey;background-color:black;opacity: 0.7;font-size: 14px;overflow:scroll;">
+			<span style="font-size: 24px;padding:10px;">Choose World</span>
+		</div>
+		<div id="ability-menu" >
+			<p>Abilities (double click on target, or hold key & click)</p>
+		</div>
 		
 		<script type="text/javascript">
-		
+		document.body.onselectstart = function(e) { if (e.target.nodeName != "INPUT" && e.target.nodeName != "TEXTAREA") { e.preventDefault(); return false; } return true; }
 var canvas,	
-	context,	
 	socket,
-	color,playersDiv,
+	mainMenu,
+	abilityMenu,
 	searchRadius,
 	worldLayout,worldsLayout,activeLayout;
 
 var world={},worlds={},cards;
-function updateworldInfo(){playersDiv.selectAll("p").data(Object.values(world.players)).enter().append("p").text(function(d){return JSON.stringify(d);});}//??!!
 
 function init() {
-	color = d3.scaleOrdinal(d3.schemeCategory20);
-	playersDiv=d3.select("#playersDisplay");
+
+	mainMenu=d3.select("#main-menu");
+	abilityMenu=d3.select("#ability-menu");
 	canvas=d3.select("#canvas").node();
 	socket = io.connect("/", {  transports: [ "websocket","flashsocket","polling" ] });
 	//window.addEventListener("resize", onResize, false);
 	socket.on("connect", function(data) {
+		graph3d.localPlayerID=socket.id;
 		console.log("Connected to socket server");
 	});
 	socket.on("disconnect", function(data) {
 		console.log("Disconnected from socket server");
 	});
 
+	socket.on("choose world",function(worlds){
+		graph3d.worldTemplates=worlds;//for input binding
+		var ws=mainMenu.style("display","block").selectAll("div").data(Object.values(worlds)).enter().append("div").attr("class","world-template").on("click",function(data){socket.emit("choose world",data.id);});
+		ws.append("p").text(function(data){return data.name}).attr("class","world-name");
+		ws.append("p").text(function(data){return data.info});
+	});
 	socket.on("enter world", function(data) {
-		world=data;world.links={};preprocess(world);graph3d.show(world);
+		mainMenu.style('display','none');world=data;graph3d.show(world);//set up gesture binding, as gestures are controlled by graph3d
+		var as=abilityMenu.selectAll("div").data(Object.values(graph3d.worldTemplates[graph3d.world.template].abilities));
+		as.exit().remove();
+		as=as.enter().append("div").attr("class","ability");//??abilities are an array, each one identified by index (id). there are three ways to use them: clicking on ability blocks, pressing keys(??), or using gesture on targets. the blcok helps if there's no bound gesture for it.
+		as=abilityMenu.selectAll("div");
+		as.selectAll("p").remove();
+		as.append("p").text((x)=>x.name);
+		as.append("p").text((x)=>x.info);
 	});
 	
-	socket.on("color node" ,function onColorNode(data){graph3d.colorNode(data.id,data);} );
-	socket.on("label node" ,function onLabelNode(data){graph3d.labelNode(data.id,data.text);} );
+
+	//todo
+	socket.on("add" ,graph3d.addObject );
+	socket.on("delete" ,graph3d.deleteObject );
+	socket.on("update" ,graph3d.updateObject );
 	
-	socket.on("add node" ,function onAddNode(data){graph3d.addNode(data);} );
-	socket.on("delete node" ,function(data){graph3d.deleteNode(data)} );
-	socket.on("add link" ,function(data){ graph3d.addLink(data.source,data.target)} );
-	socket.on("delete link" ,function(data){ graph3d.deleteLink(data.source,data.target);} );
-
-	graph3d.ontextchange=function labelNode(value){
-		if(graph3d.selectedNode){
-			socket.emit("label node",{id:graph3d.selectedNode.id,text:value});
-		}
-	}
-	graph3d.onclick=function clicked(target){
-		if(target)
-		{
-			var sphere;
-			if(graph3d.selectedNode){
-				if(graph3d.selectedNode!=target){
-					console.log("clicked on another node");
-					if(graph3d.selectedNode.links[target.id])
-					{
-						console.log("deleting link "+graph3d.selectedNode.id+","+target.id);
-						socket.emit("delete link",{source:graph3d.selectedNode.id,target:target.id});
-					}
-					else {
-						console.log("adding link "+graph3d.selectedNode.id+","+target.id);
-						socket.emit("add link",{source:graph3d.selectedNode.id,target:target.id});
-					}
-				}
-				else
-				{
-					graph3d.deselectNode();
-				}
-			}
-			else
-			{
-				graph3d.selectNode(target);
-			}
-		}
-		else
-		{
-			if(graph3d.selectedNode){
-				graph3d.deselectNode();
-			}
-		}
-	}
-	graph3d.onrightclick=function (target){
-		if(target)
-		{//color nodes - to make sure nodes are all easily visible, we keep track of hue and saturation and use that to color nodes, but all luminances should be kept somewhat constant visually(black nodes would be dar inside but have a light grey outer glow, and white nodes have the same outer glow, for example)
-			var c=graph3d.chosenColor;
-			socket.emit("color node",{h:c.h,s:c.s,v:c.v,id:target.id});//using a consistent set of ranges: 360, 100, and 100.
-		}
-		else
-		{//for want of a better input method, this is for node "dragging" - actual dragging is too easy to confuse with camera operations
-			if(graph3d.selectedNode){
-				var pos=graph3d.getAlignedMousePosition3d(graph3d.selectedNode.__sphere);
-				if(pos)
-				{
-					graph3d.targetNodeLocation=pos;//this gradually makes the selected node fly to that place
-				}
-				else{console.log("too far away");}
-			}
-		}
-	}
-	graph3d.ondblclick=	function dblclicked(target){
-		if(target)
-		{
-			if(graph3d.selectedNode==target){//remove the selection first
-				sphere=graph3d.selectedNode.__sphere;
-				sphere.remove(graph3d.selectMark);
-				graph3d.selectedNode=undefined;
-				socket.emit("delete node",target.id);
-			}
-			else{
-				//since double click triggers a click first and I don't want to add a delay here, have to use single clicks for link operations
-			}
-		}
-		else
-		{
-		//todo first try moving a degree 0 node to where the player wants if there's a surplus - no need to keep creating so many nodes?
-			var pos=graph3d.getMousePosition3d();
-			if(pos)
-			{
-				graph3d.newNodePositions.push(pos);
-				socket.emit("add node");
-			}
-			else{console.log("too far away");}
-		}
-		
-	}
-
+	socket.on("test" ,console.log );
+	socket.on("win" ,function(data){alert("You have won!");socket.emit("exit world");} );
+	
 	canvas.innerHTML = '';
 
 	init3d(canvas);
@@ -195,19 +285,7 @@ function init() {
 
 init();
 ////////////////////////////////////////////////
-function preprocess(data)
-{//for when nodes are given as an array (with elements having ids); we need a map
-	data.nodesMap={};data.linksMap={};//here the incoming nodes is a map. we need nodes to be an array for d3
-	for(var id in data.nodes){
-		data.nodesMap[data.nodes[id].id]=data.nodes[id];
-		for(var target in data.nodes[id].links)
-		{
-			if(Number(target)>Number(id)){data.linksMap[id+"-"+target]={source:id,target:target};}
-		}
-	}
-	data.nodes=Object.values(data.nodesMap);
-	data.links=Object.values(data.linksMap);
-}
+
 
 		</script>
 	</body>

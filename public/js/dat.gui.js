@@ -1,3 +1,4 @@
+//note: changed a bit to make HSV color formats have priority over RGB, because I need an object that has both to be interpreted as HSV
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -542,6 +543,51 @@ return /******/ (function(modules) { // webpackBootstrap
 	{
 	  litmus: _common2.default.isObject,
 	  conversions: {
+		  HSVA_OBJ: {
+	      read: function read(original) {
+	        if (_common2.default.isNumber(original.h) && _common2.default.isNumber(original.s) && _common2.default.isNumber(original.v) && _common2.default.isNumber(original.a)) {
+	          return {
+	            space: 'HSV',
+	            h: original.h,
+	            s: original.s,
+	            v: original.v,
+	            a: original.a
+	          };
+	        }
+	        return false;
+	      },
+	
+	      write: function write(color) {
+	        return {
+	          h: color.h,
+	          s: color.s,
+	          v: color.v,
+	          a: color.a
+	        };
+	      }
+	    },
+	
+	    HSV_OBJ: {
+	      read: function read(original) {
+	        if (_common2.default.isNumber(original.h) && _common2.default.isNumber(original.s) && _common2.default.isNumber(original.v)) {
+	          return {
+	            space: 'HSV',
+	            h: original.h,
+	            s: original.s,
+	            v: original.v
+	          };
+	        }
+	        return false;
+	      },
+	
+	      write: function write(color) {
+	        return {
+	          h: color.h,
+	          s: color.s,
+	          v: color.v
+	        };
+	      }
+	    },
 	
 	    RGBA_OBJ: {
 	      read: function read(original) {
@@ -587,53 +633,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	          b: color.b
 	        };
 	      }
-	    },
-	
-	    HSVA_OBJ: {
-	      read: function read(original) {
-	        if (_common2.default.isNumber(original.h) && _common2.default.isNumber(original.s) && _common2.default.isNumber(original.v) && _common2.default.isNumber(original.a)) {
-	          return {
-	            space: 'HSV',
-	            h: original.h,
-	            s: original.s,
-	            v: original.v,
-	            a: original.a
-	          };
-	        }
-	        return false;
-	      },
-	
-	      write: function write(color) {
-	        return {
-	          h: color.h,
-	          s: color.s,
-	          v: color.v,
-	          a: color.a
-	        };
-	      }
-	    },
-	
-	    HSV_OBJ: {
-	      read: function read(original) {
-	        if (_common2.default.isNumber(original.h) && _common2.default.isNumber(original.s) && _common2.default.isNumber(original.v)) {
-	          return {
-	            space: 'HSV',
-	            h: original.h,
-	            s: original.s,
-	            v: original.v
-	          };
-	        }
-	        return false;
-	      },
-	
-	      write: function write(color) {
-	        return {
-	          h: color.h,
-	          s: color.s,
-	          v: color.v
-	        };
-	      }
 	    }
+	
+	    
 	  }
 	}];
 	
