@@ -1,4 +1,4 @@
-# galaxy-globe-graph-sandbox
+# Galaxy Globe Graph Sandbox
 multi-player sandbox game based on 3D graph drawing
 
 ## running

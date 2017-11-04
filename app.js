@@ -33,6 +33,7 @@ var worldPrototype={//this is intended to be copied into every world; porperties
 	adjacent:function (a,b){return b in this.vertices[a].edges;},
 	getObj:function(obj)
 	{
+		if(!obj)return;
 		switch(obj.type){
 			case "vertex":return this.vertices[obj.id];break;
 			case "edge":return this.edges[obj.id];break;
@@ -51,6 +52,7 @@ var worldPrototype={//this is intended to be copied into every world; porperties
 		for(var p in this.players)
 		{
 			if(p!=ignored){
+				
 				players[p].client.emit(type,message);
 			}
 		}
@@ -134,7 +136,9 @@ var worldPrototype={//this is intended to be copied into every world; porperties
 	deletePlayer:function(id){
 		util.log("player "+id+" was in world "+this.id +", removing them");
 		if(this.onDeletePlayer){this.onDeletePlayer(this.players[id]);}//it's not possible for a game to refuse deleting a player. but if you don't like sudden disapperance, make an NPC take his place or something. Don't alter this player object's type or ID.
-		this.broadcastExcept("delete",this.players[id],id);//this is intended for managing the client side graph, not for gameplay announcements, so if you need to say someone loses the game, do so in onDeletePlayer
+		var temp=this.players[id];
+		delete this.players[id];players[id].world=null;
+		this.broadcastExcept("delete",temp,id);//this is intended for managing the client side graph, not for gameplay announcements, so if you need to say someone loses the game, do so in onDeletePlayer
 		//the one being deleted presumably already left the game
 		//update world?
 		
@@ -143,10 +147,11 @@ var worldPrototype={//this is intended to be copied into every world; porperties
 	{//to perform and communicate most other game changes.
 		if(this.onUpdate){var result=this.onUpdate(obj,key,value);if(result){console.log("change to "+obj.type +" #"+obj.id+" prevented because "+result);return;}}//this is an easy way to write programming-game style conditional triggers without having to put the same checks in multiple places
 		obj=this.getObj(obj);//get the correct world reference, not the object from the socket
+		if(!obj){console.log("missing object in update: "+key+"="+value);}
 		//special case for colors, ugh
 		//make sure to update the actual object in the world - this may get called carelessly for objects that aren't part of the world, like from the socket
 		if((key=="color")&&(! ("r" in value))){var value2={};setHSV(value2,value.h||0,value.s||0,value.v||0);value=value2;}//don't want multiple references if the color object is reused
-		console.log("updating "+key+" to "+ value);
+		//console.log("updating "+key+" to "+ value);
 		obj[key]=value;this.broadcast("update",{type:obj.type,id:obj.id,key:key,value:value});
 		//console.log(obj);
 	},
@@ -214,6 +219,7 @@ function onSocketConnection(client) {
 		util.log("Player has disconnected: "+this.id);
 		var w=players[this.id].world;
 		if(w){worlds[w].deletePlayer(this.id);}
+		delete players[this.id];
 	});
 	
 	client.on("choose world", function(data){//choosing to enter a world

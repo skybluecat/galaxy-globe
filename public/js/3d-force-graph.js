@@ -37,6 +37,8 @@ function init3d(domElement) {
     domElement.appendChild(toolTipElem);
 	
 	graph3d.addLog=function(msg){
+		//skip repeated messages
+		var lastlog=graph3d.logElem.lastElementChild;if((lastlog)&&(lastlog.textContent==msg)){return;}
 		var p=document.createElement('p');p.textContent=msg;p.className = 'graph-log';
 		graph3d.logElem.appendChild(p);p.createTime=new Date().getTime();
 	};
@@ -85,7 +87,6 @@ function init3d(domElement) {
 					//
 				}
 			}
-			//console.log("clicked "+bestObj.type+" "+bestObj.id+((bestObj.type=="edge")?": from "+bestObj.source.id+" to "+bestObj.target.id:""));
 			return bestObj;
 		}
 	};
@@ -586,8 +587,8 @@ graph3d.ondblclick=	function(target){
 	{
 		if(graph3d.abilities[i].filter(target)){
 			socket.emit("use ability",{ability:i,target:target});
-			console.log("used ability "+graph3d.abilities[i].name+" with "+target);
-			break;
+			graph3d.addLog("used ability "+graph3d.abilities[i].name+" with "+target.type+" #"+target.id);
+			return;
 		}
 	}
 	graph3d.addLog("can't use any ability on that");
@@ -650,11 +651,10 @@ graph3d.degreeDistributionChanged = function() {
 graph3d.update = function() {
     //for when the graph changes
     if (!graph3d.world){console.log("can't display missing world");return;}
-	console.log("starting update");
+	//console.log("starting update");
 	//need arrays
 	graph3d.world.vArray=Object.values(graph3d.world.vertices);
 	graph3d.world.eArray=Object.values(graph3d.world.edges);
-	graph3d.world.pArray=Object.values(graph3d.world.players);
     graph3d.sizeChanged();
     graph3d.degreeDistributionChanged();
     graph3d.d3ForceLayout.stop().alpha(1)// re-heat the simulation
@@ -681,11 +681,12 @@ graph3d.update = function() {
 	graph3d.linksGeometry.addAttribute('customColor', colors2);
 	graph3d.linksGeometry.addAttribute('brightness', brightnesses);
 	graph3d.links.geometry=graph3d.linksGeometry;
-	console.log("updated");
+	//console.log("updated");
 	
 }
 graph3d.updatePlayers=function()
 {//recreate the player points buffer
+	graph3d.world.pArray=Object.values(graph3d.world.players);
 	graph3d.playersGeometry=new THREE.BufferGeometry();
 	var length=Object.keys(graph3d.world.players).length;//unlike nodes and links, this doesn't need to be an array
 	var positions = new THREE.BufferAttribute( new Float32Array( length * 3 ), 3);positions.setDynamic(true);
@@ -744,7 +745,7 @@ graph3d.addNode = function(node) {
         console.error("adding node with existing ID " + node.id);
         return;
     }
-    console.log("adding node " + node.id);
+    //console.log("adding node " + node.id);
     
     world.vertices[node.id] = node;
     if (graph3d.newNodePositions.length > 0) {
@@ -771,10 +772,10 @@ graph3d.deleteNode = function(id) {
         return;
     }
     var node = graph3d.world.vertices[id];
-	console.log("removing node " + node.id);
+	//console.log("removing node " + node.id);
     var l = node.edges;
     for (var target in l) {
-        console.log("forced deletion of an edge to " + target);
+        //console.log("forced deletion of an edge to " + target);
 		var eid=graph3d.world.vertices[id].edges[target];
         delete graph3d.world.vertices[id].edges[target];
         delete graph3d.world.vertices[target].edges[id];
@@ -828,23 +829,25 @@ graph3d.deleteLink = function(data) {
 }
 
 graph3d.addObject=function(data){
+	//console.log("adding "+data.type);
 	switch(data.type)
 	{
 		case "vertex": graph3d.addNode(data); break;
 		case "edge": graph3d.addLink(data);break;
-		case "player":graph3d.addPlayer(data);break;
+		case "player":graph3d.addLog("A player joined the game");graph3d.addPlayer(data);break;
 	}
 }
 graph3d.deleteObject=function(data){
+	//console.log("deleting "+data.type);
 	switch(data.type)
 	{
 		case "vertex": graph3d.deleteNode(data); break;
 		case "edge": graph3d.deleteLink(data);break;
-		case "player":graph3d.deletePlayer(data);break;
+		case "player":graph3d.addLog("A player left the game");graph3d.deletePlayer(data);break;
 	}
 }
 graph3d.updateObject=function(data){
-	console.log("updating "+data.type+" " +data.id+": "+data.key+" to "+JSON.stringify(data.value));
+	//console.log("updating "+data.type+" " +data.id+": "+data.key+" to "+JSON.stringify(data.value));
 	switch(data.type)
 	{
 		case "vertex": graph3d.world.vertices[data.id][data.key]=data.value; break;
@@ -864,7 +867,7 @@ graph3d.deletePlayer=function(data)
 }
 
 graph3d.show = function show(world) {
-	console.log("showing world "+world.id);
+	//console.log("showing world "+world.id);
 	graph3d.world = world;
     layout = graph3d.d3ForceLayout;
 	layout.stop().alpha(1)// re-heat the simulation
@@ -909,7 +912,7 @@ graph3d.show = function show(world) {
 	
 	
 	
-	console.log("shown world "+world.id);
+	//console.log("shown world "+world.id);
 }
 var layout;
 var cntTicks = 0;
@@ -929,7 +932,7 @@ function layoutTick() {
     if (!world)
         return;
 
-	if(!tested){tested=true;console.log("starting ticks");}
+	if(!tested){tested=true;}
     //move the selected node slowly to the target location if any
     if (graph3d.selectedNode && graph3d.targetPos) {
         graph3d.d3ForceLayout.alpha(1);
