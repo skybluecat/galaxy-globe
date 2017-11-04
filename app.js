@@ -30,6 +30,7 @@ var worldPrototype={//this is intended to be copied into every world; porperties
 	vertexCount:function(){return Object.keys(this.vertices).length},
 	edgeCount:function(){return Object.keys(this.edges).length},
 	
+	adjacent:function (a,b){return b in this.vertices[a].edges;},
 	getObj:function(obj)
 	{
 		switch(obj.type){
@@ -87,6 +88,8 @@ var worldPrototype={//this is intended to be copied into every world; porperties
 		var id=this.maxEdgeID+1;//real ids are >=1
 		var e={type:"edge",id:id,source:source,target:target,length:1,width:1};//edges don't have their own colors but do have weights and lengths
 		if(this.onAddEdge){var result=this.onAddEdge(e);if(result){console.log("adding edge prevented because "+result);return;}}
+		if(!this.vertices[source]){console.log("missing source vertex "+source);return;}
+		if(!this.vertices[target]){console.log("missing target vertex "+target);return;}
 		this.vertices[source].edges[target]=id;  //cannot use cyclic references because we need to pass this vertices object to new players
 		this.vertices[target].edges[source]=id;
 		this.edges[id]=e;

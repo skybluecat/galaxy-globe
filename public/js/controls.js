@@ -127,6 +127,88 @@ function mousewheel( event ) {
 	}
 
 }
+
+function touchstart( event ) {
+
+	if ( _this.enabled === false ) return;
+
+	switch ( event.touches.length ) {
+
+		case 1:
+			_state = STATE.TOUCH_ROTATE;
+			_moveCurr.copy( getMouseOnCircle( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
+			_movePrev.copy( _moveCurr );
+			break;
+
+		default: // 2 or more
+			_state = STATE.TOUCH_ZOOM_PAN;
+			var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+			var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+			_touchZoomDistanceEnd = _touchZoomDistanceStart = Math.sqrt( dx * dx + dy * dy );
+
+			var x = ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX ) / 2;
+			var y = ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY ) / 2;
+			_panStart.copy( getMouseOnScreen( x, y ) );
+			_panEnd.copy( _panStart );
+			break;
+
+	}
+
+	_this.dispatchEvent( startEvent );
+
+}
+
+function touchmove( event ) {
+
+	if ( _this.enabled === false ) return;
+
+	event.preventDefault();
+	event.stopPropagation();
+
+	switch ( event.touches.length ) {
+
+		case 1:
+			_movePrev.copy( _moveCurr );
+			_moveCurr.copy( getMouseOnCircle( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
+			break;
+
+		default: // 2 or more
+			var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+			var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+			_touchZoomDistanceEnd = Math.sqrt( dx * dx + dy * dy );
+
+			var x = ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX ) / 2;
+			var y = ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY ) / 2;
+			_panEnd.copy( getMouseOnScreen( x, y ) );
+			break;
+
+	}
+
+}
+
+function touchend( event ) {
+
+	if ( _this.enabled === false ) return;
+
+	switch ( event.touches.length ) {
+
+		case 0:
+			_state = STATE.NONE;
+			break;
+
+		case 1:
+			_state = STATE.TOUCH_ROTATE;
+			_moveCurr.copy( getMouseOnCircle( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
+			_movePrev.copy( _moveCurr );
+			break;
+
+	}
+
+	_this.dispatchEvent( endEvent );
+
+}
+	
+	
 function contextmenu( event ) {
 	event.preventDefault();
 
@@ -388,6 +470,10 @@ function contextmenu( event ) {
 	domElement.addEventListener( 'contextmenu', contextmenu, false );
 	domElement.addEventListener( 'mousedown', mousedown, false );
 	domElement.addEventListener( 'wheel', mousewheel, false );
+	
+	domElement.addEventListener( 'touchstart', touchstart, false );
+	domElement.addEventListener( 'touchend', touchend, false );
+	domElement.addEventListener( 'touchmove', touchmove, false );
 	
 	window.addEventListener( 'keydown', keydown, false );
 	window.addEventListener( 'keyup', keyup, false );

@@ -23,6 +23,7 @@ function init3d(domElement) {
 	domElement.appendChild(graph3d.exitButton = document.createElement('div'));
     graph3d.exitButton.className = 'exit-button';graph3d.exitButton.textContent="Exit world";
     graph3d.exitButton.onclick = ()=>socket.emit("exit world");
+    graph3d.exitButton.ontouchend = ()=>socket.emit("exit world");
 	
 	
     domElement.appendChild(graph3d.logElem = document.createElement('div'));
@@ -48,40 +49,8 @@ function init3d(domElement) {
     mousePos.x = -2;
     // Initialize off canvas
     mousePos.y = -2;
-    domElement.addEventListener("mousemove", ev=>{
-		
-        const offset = getOffset(domElement)
-          , relPos = {
-            x: ev.pageX - offset.left,
-            y: ev.pageY - offset.top
-        };
-		mousePos.x = ( event.clientX / domElement.clientWidth ) * 2 - 1;
-		mousePos.y = - ( event.clientY / domElement.clientHeight ) * 2 + 1;
-		mouseScreenPos.x=event.clientX;
-		mouseScreenPos.y=event.clientY;
-        //mousePos.x = ((relPos.x / domElement.clientWidth) * 2 - 1);
-        //mousePos.y = -(relPos.y / domElement.clientHeight) * 2 + 1;
-        toolTipElem.style.top = (relPos.y - 40) + 'px';
-        toolTipElem.style.left = (relPos.x - 20) + 'px';
-
-		var alpha=graph3d.d3ForceLayout.alpha();
-		if(graph3d.getObjectAtPos(mousePos)){graph3d.d3ForceLayout.alpha(alpha*0.97);}//slowly pause the moving stuff so players can click easily
-        else{graph3d.d3ForceLayout.alpha(alpha+0.005>1?1:alpha+0.005);}
-		
 	
-        function getOffset(el) {
-            const rect = el.getBoundingClientRect()
-              , scrollLeft = window.pageXOffset || document.documentElement.scrollLeft
-              , scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            return {
-                top: rect.top + scrollTop,
-                left: rect.left + scrollLeft
-            };
-        }
-    }
-    , false);
-
-    window.addEventListener("resize", resizeCanvas, false);
+	window.addEventListener("resize", resizeCanvas, false);
     // Handle click events on nodes ; click to select node
     var mouseDownPos = {
         x: -1,
@@ -120,32 +89,8 @@ function init3d(domElement) {
 			return bestObj;
 		}
 	};
-    domElement.addEventListener("mousedown", ev=>{
-        mouseDownPos.x = mousePos.x;
-        mouseDownPos.y = mousePos.y;
-		//todo: start dragging if clicked, and stop camera moving
-    });
-    domElement.addEventListener("mouseup", ev=>{
-        if ((graph3d.world) && (graph3d.onclick) && (mouseDownPos.y == mousePos.y) && (mouseDownPos.x == mousePos.x)) {
-            const target=graph3d.getObjectAtPos(mouseDownPos);
-            if (target) {
-                if (ev.button == 0) {
-                    graph3d.onclick(target);
-                }
-                if (ev.button > 0) {
-                    graph3d.onrightclick(target);
-                }
-            } else {
-                console.log("nothing clicked");
-                if (ev.button == 0)
-                    graph3d.onclick();
-                if (ev.button > 0)
-                    graph3d.onrightclick();
-            }
-        }
-    }
-    , false);
-    //dummy plane to determine 3d location of the click, when we need to create vertices
+	
+	//dummy plane to determine 3d location of the click, when we need to create vertices
     var dummyMat = new THREE.SpriteMaterial({
         map: glowMap,
         color: 0xeeeeff,
@@ -170,8 +115,164 @@ function init3d(domElement) {
     graph3d.clickPlaneMoveable = clickPlaneMoveable;
     //this is for detecting 3d locations of clicks relative to a selected node
 
+    
+	
+	
+    domElement.addEventListener("mousemove", ev=>{
+		
+        const offset = getOffset(domElement)
+          , relPos = {
+            x: ev.pageX - offset.left,
+            y: ev.pageY - offset.top
+        };
+		mousePos.x = ( event.clientX / domElement.clientWidth ) * 2 - 1;
+		mousePos.y = - ( event.clientY / domElement.clientHeight ) * 2 + 1;
+		mouseScreenPos.x=event.clientX;
+		mouseScreenPos.y=event.clientY;
+        //mousePos.x = ((relPos.x / domElement.clientWidth) * 2 - 1);
+        //mousePos.y = -(relPos.y / domElement.clientHeight) * 2 + 1;
+        toolTipElem.style.top = (relPos.y - 40) + 'px';
+        toolTipElem.style.left = (relPos.x - 20) + 'px';
 
-    //double click to edit graph - admittedly hacky; double click on empty space to create vertex, on a selected node to delete it, on a node adjacent to the selected node to delete an edge, or on another non-adjacent one to create an edge.
+		var alpha=graph3d.d3ForceLayout.alpha();
+		if(graph3d.getObjectAtPos(mousePos)){graph3d.d3ForceLayout.alpha(alpha*0.97);}//slowly pause the moving stuff so players can click easily
+        else{graph3d.d3ForceLayout.alpha(alpha+0.005>1?1:alpha+0.005);}
+		
+	
+        function getOffset(el) {
+            const rect = el.getBoundingClientRect()
+              , scrollLeft = window.pageXOffset || document.documentElement.scrollLeft
+              , scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            return {
+                top: rect.top + scrollTop,
+                left: rect.left + scrollLeft
+            };
+        }
+    }
+    , false);
+	domElement.addEventListener("touchmove", ev=>{
+		//treat it like single click(looking)
+        const offset = getOffset(domElement)
+          , relPos = {
+            x: ev.pageX - offset.left,
+            y: ev.pageY - offset.top
+        };
+		mousePos.x = ( ev.touches[0].pageX / domElement.clientWidth ) * 2 - 1;
+		mousePos.y = - ( ev.touches[0].pageY / domElement.clientHeight ) * 2 + 1;
+		mouseScreenPos.x=ev.touches[0].pageX;
+		mouseScreenPos.y=ev.touches[0].pageY;
+        //mousePos.x = ((relPos.x / domElement.clientWidth) * 2 - 1);
+        //mousePos.y = -(relPos.y / domElement.clientHeight) * 2 + 1;
+        toolTipElem.style.top = (relPos.y - 40) + 'px';
+        toolTipElem.style.left = (relPos.x - 20) + 'px';
+
+		
+		
+	
+        function getOffset(el) {
+            const rect = el.getBoundingClientRect()
+              , scrollLeft = window.pageXOffset || document.documentElement.scrollLeft
+              , scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            return {
+                top: rect.top + scrollTop,
+                left: rect.left + scrollLeft
+            };
+        }
+    }
+    , false);
+
+    domElement.addEventListener("mousedown", ev=>{
+        mouseDownPos.x = mousePos.x;
+        mouseDownPos.y = mousePos.y;
+		//todo: start dragging if clicked, and stop camera moving
+    });
+	domElement.addEventListener("touchstart", ev=>{
+		const offset = getOffset(domElement)//since there's no "mousemove" when you are not touching, the positions must be set when touch starts
+          , relPos = {
+            x: ev.pageX - offset.left,
+            y: ev.pageY - offset.top
+        };
+		mousePos.x = ( event.touches[0].pageX / domElement.clientWidth ) * 2 - 1;
+		mousePos.y = - ( event.touches[0].pageY / domElement.clientHeight ) * 2 + 1;
+		mouseScreenPos.x=event.touches[0].pageX;
+		mouseScreenPos.y=event.touches[0].pageY;
+        //mousePos.x = ((relPos.x / domElement.clientWidth) * 2 - 1);
+        //mousePos.y = -(relPos.y / domElement.clientHeight) * 2 + 1;
+        toolTipElem.style.top = (relPos.y - 40) + 'px';
+        toolTipElem.style.left = (relPos.x - 20) + 'px';
+
+	
+        function getOffset(el) {
+            const rect = el.getBoundingClientRect()
+              , scrollLeft = window.pageXOffset || document.documentElement.scrollLeft
+              , scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            return {
+                top: rect.top + scrollTop,
+                left: rect.left + scrollLeft
+            };
+        }
+        mouseDownPos.x = mousePos.x;
+        mouseDownPos.y = mousePos.y;
+		//todo: start dragging if clicked, and stop camera moving
+		ev.preventDefault();
+    });
+    domElement.addEventListener("mouseup", ev=>{
+        if ((graph3d.world) && (graph3d.onclick) && (mouseDownPos.y == mousePos.y) && (mouseDownPos.x == mousePos.x)) {
+            const target=graph3d.getObjectAtPos(mouseDownPos);
+            if (target) {
+                if (ev.button == 0) {
+                    graph3d.onclick(target);
+                }
+                if (ev.button > 0) {
+                    graph3d.onrightclick(target);
+                }
+            } else {
+                
+                if (ev.button == 0)
+                    graph3d.onclick();
+                if (ev.button > 0)
+                    graph3d.onrightclick();
+            }
+        }
+    }
+    , false);
+	graph3d.lastTouchedObj=null;
+	graph3d.lastTouchedPos={x:-1,y:-1};
+	domElement.addEventListener("touchend", ev=>{
+		//try to treat it like double click if not moving
+		
+        if ((graph3d.world) && (graph3d.onclick) && Math.abs(mouseDownPos.y - mousePos.y)<10 && Math.abs(mouseDownPos.x -mousePos.x)<10) {
+			if(Math.abs(graph3d.lastTouchedPos.x-mouseDownPos.x)<5 && Math.abs(graph3d.lastTouchedPos.y-mouseDownPos.y)<5)
+			{
+				const target=graph3d.getObjectAtPos(mouseDownPos);
+				if (target) {
+					graph3d.ondblclick(target);
+				} 
+				else {
+					graph3d.ondblclick();
+				}
+			}
+			else{
+				const target=graph3d.getObjectAtPos(mouseDownPos);
+				if (target) {
+					graph3d.onclick(target);
+				} 
+				else {
+					graph3d.onclick();
+				}
+				graph3d.lastTouchedPos.x=mouseDownPos.x;
+				graph3d.lastTouchedPos.y=mouseDownPos.y;
+				var alpha=graph3d.d3ForceLayout.alpha();
+				if(target){graph3d.d3ForceLayout.alpha(alpha*0.1);}
+				else{graph3d.d3ForceLayout.alpha(alpha+0.5>1?1:alpha+0.5);}
+			}   
+        }
+		
+    }
+    , false);
+	
+    
+
     domElement.addEventListener("dblclick", ev=>{
         if ((graph3d.world) && (graph3d.ondblclick)) {
             raycaster.setFromCamera(mousePos, graph3d.camera);
@@ -179,7 +280,6 @@ function init3d(domElement) {
             if (target) {
                 graph3d.ondblclick(target);
             } else {
-                console.log("nothing doubleclicked");
                 graph3d.ondblclick(null);
             }
         }
@@ -390,12 +490,7 @@ function init3d(domElement) {
     graph3d.linkStrengthFactor = 0.1;
     graph3d.chargeStrengthFactor = 1;
     graph3d.radialStrengthFactor = 1;
-    graph3d.chosenColor = {
-        h: 0,
-        s: 1,
-        v: 1
-    };
-    graph3d.nodeText = "";
+
     var gui = new dat.GUI();
     graph3d.gui = gui;
     var forceFolder = gui.addFolder('Forces');
@@ -411,18 +506,10 @@ function init3d(domElement) {
     forceFolder.add(graph3d, 'radialStrengthFactor', 0.1, 5).onChange(function(value) {
         graph3d.update();
     });
-    ;var colorFolder = gui.addFolder('Coloring(right click nodes)');
-    colorFolder.addColor(graph3d, 'chosenColor');
 
-    var textFolder = gui.addFolder('Text (select node & edit)');
-    textFolder.add(graph3d, 'nodeText').onFinishChange(function(value) {
-        console.log(value);
-        graph3d.ontextchange(value);
-    });
-
-    var nodeFolder = gui.addFolder('Nodes (double click to add/remove)');
+    var nodeFolder = gui.addFolder('Nodes');
     nodeFolder.add(graph3d.nodes, 'visible');
-    var linkFolder = gui.addFolder('Links (click endpoint to add/remove)');
+    var linkFolder = gui.addFolder('Links');
     linkFolder.add(graph3d.links, 'visible');
 }
 
@@ -515,7 +602,7 @@ graph3d.linkStrength = function(link) {
     return 1 * graph3d.linkStrengthFactor / Math.min(s, t);
 }
 graph3d.chargeStrength = function(data) {
-    return -graph3d.chargeStrengthFactor*5 / (Object.keys(data.edges).length + 1);
+    return -graph3d.chargeStrengthFactor*25 / (Object.keys(data.edges).length + 1);
 }
 graph3d.radialRadius = function(data) {
     if (!graph3d.cumulativeDist)

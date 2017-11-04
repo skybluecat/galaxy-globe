@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no" />
 		<title>Galaxy Globe - Graph Sandbox</title>
 		<style type="text/css">
 html , body {
@@ -221,11 +222,15 @@ div.graph-logs {
 			<span style="font-size: 24px;padding:10px;">Choose World</span>
 		</div>
 		<div id="ability-menu" >
-			<p>Abilities (double click on target, or hold key & click)</p>
+			<p>Abilities (double click on target)</p>
 		</div>
 		
 		<script type="text/javascript">
 		document.body.onselectstart = function(e) { if (e.target.nodeName != "INPUT" && e.target.nodeName != "TEXTAREA") { e.preventDefault(); return false; } return true; }
+		document.ontouchmove = function(e){
+		
+             if(e.target.nodeName != "DIV" && e.target.nodeName != "P" && e.touches.length>1) { e.preventDefault(); return false; } return true;
+		}
 var canvas,	
 	socket,
 	mainMenu,
