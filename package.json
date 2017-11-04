@@ -3,9 +3,9 @@
   "description":"graph visualization abstract sandbox game",
   "version": "0.0.1",
   "private": true,
-  "main":"app.js"
+  "main":"app.js",
   "dependencies": {
 	"express":"*",
 	"socket.io":"*"
-	},
+	}
 }
