@@ -574,7 +574,7 @@ graph3d.onrightclick=function (target){
 		}
 		graph3d.contextElem.appendChild(gui.domElement);
 		graph3d.contextElem.style.left=(graph3d.mouseScreenPos.x+20)+"px";
-		graph3d.contextElem.style.bottom=(graph3d.mouseScreenPos.y+20)+"px";
+		graph3d.contextElem.style.top=(graph3d.mouseScreenPos.y+20)+"px";
 	}
 	else
 	{//todo: a global context menu? for forces?
